@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>가능충 케이크</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+
+        #inviteCodeForm {
+            margin-top: 20px;
+        }
+
+        #inviteCodeSettingForm {
+            margin-top: 20px;
+            display: block;
+        }
+
+        #cake-container {
+            display: none;
+            position: relative;
+            width: 100%;
+            height: 600px;
+            margin-top: 50px;
+        }
+
+        #cake {
+            width: 50%;
+            position: absolute;
+            top: 10%; /* 케이크를 화면 하단으로 이동 */
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
+        }
+
+        .uploaded-image {
+            position: absolute;
+            width: 125px;
+            height: auto;
+            cursor: move;
+        }
+
+        .reaction-buttons {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        .reaction-button {
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .reaction-count {
+            margin-left: 5px;
+        }
+
+        #alert-popup {
+            display: none;
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 10px;
+        }
+
+        #alert-popup label {
+            color: white;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>천하제일 가능충이 되어보세요!</h1>
+
+    <div id="inviteCodeForm">
+        <label for="inviteCodeInput">초대 코드를 입력하세요:</label>
+        <input type="text" id="inviteCodeInput" placeholder="초대 코드">
+        <button id="submitInviteCode">초대 코드 제출</button>
+        <p id="inviteCodeError" style="color: red; display: none;"></p>
+    </div>
+
+    <div id="inviteCodeSettingForm">
+        <label for="newInviteCodeInput">새 초대 코드 설정:</label>
+        <input type="text" id="newInviteCodeInput" placeholder="새 초대 코드">
+        <button id="submitNewInviteCode">초대 코드 추가</button>
+        <p id="settingError" style="color: red; display: none;"></p>
+    </div>
+
+    <div id="cake-container">
+        <img src="cake.png" id="cake" alt="케이크">
+        <input type="file" id="imageInput" accept="image/*">
+    </div>
+
+    <div id="alert-popup">
+        <p id="alert-message">정말 가능합니까?</p>
+        <button id="confirmYes">예(Y)</button>
+        <label for="dontShowAgain">
+            <input type="checkbox" id="dontShowAgain"> 다시 보지 않음
+        </label>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const submitInviteCodeBtn = document.getElementById('submitInviteCode');
+        const inviteCodeInput = document.getElementById('inviteCodeInput');
+        const inviteCodeError = document.getElementById('inviteCodeError');
+        const inviteCodeSettingForm = document.getElementById('inviteCodeSettingForm');
+        const newInviteCodeInput = document.getElementById('newInviteCodeInput');
+        const submitNewInviteCodeBtn = document.getElementById('submitNewInviteCode');
+        const settingError = document.getElementById('settingError');      
+        const cakeContainer = document.getElementById('cake-container');
+        const imageInput = document.getElementById('imageInput');
+        const alertPopup = document.getElementById('alert-popup');
+        const dontShowAgainCheckbox = document.getElementById('dontShowAgain');
+        const cake = document.getElementById('cake');
+
+        // 초대 코드 제출 처리
+        submitInviteCodeBtn.addEventListener('click', () => {
+            const inviteCode = inviteCodeInput.value.trim();
+            if (inviteCode) {
+                socket.emit('checkInviteCode', inviteCode, (response) => {
+                    if (response.success) {
+                        document.getElementById('inviteCodeForm').style.display = 'none';
+                        cakeContainer.style.display = 'block';
+                        inviteCodeError.style.display = 'none';
+                        inviteCodeSettingForm.style.display = 'none';  // 초대 코드 설정 숨기기
+                    } else {
+                        inviteCodeError.textContent = response.message;
+                        inviteCodeError.style.display = 'block';
+                    }
+                });
+            }
+        });
+
+        // 초대 코드 추가 (서버 관리자용)
+        submitNewInviteCodeBtn.addEventListener('click', () => {
+            const newInviteCode = newInviteCodeInput.value.trim();
+            if (newInviteCode) {
+                fetch('/setInviteCode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ inviteCode: newInviteCode })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('초대 코드가 추가되었습니다.');
+                        newInviteCodeInput.value = ''; // 입력란 초기화
+                    } else {
+                        settingError.textContent = data.message;
+                        settingError.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    settingError.textContent = '서버 오류가 발생했습니다.';
+                    settingError.style.display = 'block';
+                });
+            }
+        });
+
+        // 팝업 표시 여부 확인
+        if (localStorage.getItem('dontShowPopup') !== 'true') {
+            alertPopup.style.display = 'block';
+        }
+
+        // 팝업 예 버튼 클릭
+        document.getElementById('confirmYes').addEventListener('click', () => {
+            if (dontShowAgainCheckbox.checked) {
+                localStorage.setItem('dontShowPopup', 'true');
+            }
+            alertPopup.style.display = 'none';
+        });
+
+        // 이미지 업로드 처리
+        imageInput.addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'uploaded-image';
+
+                    const reactionDiv = document.createElement('div');
+                    reactionDiv.className = 'reaction-buttons';
+
+                    const likeButton = document.createElement('button');
+                    likeButton.className = 'reaction-button';
+                    likeButton.textContent = '👍';
+                    const likeCount = document.createElement('span');
+                    likeCount.className = 'reaction-count';
+                    likeCount.textContent = '0';
+                    likeButton.appendChild(likeCount);
+
+                    const dislikeButton = document.createElement('button');
+                    dislikeButton.className = 'reaction-button';
+                    dislikeButton.textContent = '👎';
+                    const dislikeCount = document.createElement('span');
+                    dislikeCount.className = 'reaction-count';
+                    dislikeCount.textContent = '0';
+                    dislikeButton.appendChild(dislikeCount);
+
+                    reactionDiv.appendChild(likeButton);
+                    reactionDiv.appendChild(dislikeButton);
+
+                    cakeContainer.appendChild(img);
+                    cakeContainer.appendChild(reactionDiv);
+
+                    // 드래그 이벤트 설정
+                    enableDrag(img, reactionDiv);
+
+                    // 이모티콘 클릭 이벤트
+                    likeButton.addEventListener('click', () => {
+                        likeCount.textContent = parseInt(likeCount.textContent) + 1;
+                    });
+
+                    dislikeButton.addEventListener('click', () => {
+                        dislikeCount.textContent = parseInt(dislikeCount.textContent) + 1;
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 드래그 기능
+        function enableDrag(image, reactionDiv) {
+            let isDragging = false;
+            let offsetX = 0;
+            let offsetY = 0;
+
+            image.style.position = 'absolute';
+
+            image.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - image.getBoundingClientRect().left;
+                offsetY = e.clientY - image.getBoundingClientRect().top;
+                document.addEventListener('mousemove', dragMove);
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                document.removeEventListener('mousemove', dragMove);
+            });
+
+            function dragMove(e) {
+                if (isDragging) {
+                    image.style.left = `${e.clientX - offsetX}px`;
+                    image.style.top = `${e.clientY - offsetY}px`;
+                    reactionDiv.style.left = `${e.clientX - offsetX + image.width / 2}px`;
+                    reactionDiv.style.top = `${e.clientY - offsetY - 30}px`;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
