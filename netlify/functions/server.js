@@ -2,6 +2,9 @@
 const { send } = require('@netlify/functions');
 const inviteCodeService = require('./inviteCode'); // inviteCode.js 파일을 import
 
+// 초대 코드 목록 (예시)
+let validInviteCodes = ['1234', 'abcd', '5678'];  // 기본 초대 코드
+
 // 요청을 처리하는 함수
 exports.handler = async (event, context) => {
     const method = event.httpMethod;
