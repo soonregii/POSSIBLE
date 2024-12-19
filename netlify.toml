@@ -1,6 +1,6 @@
 [build]
   functions = "netlify/functions"
-  publish = "public" # 정적 파일 경로
+  publish = "./" # 정적 파일 경로
 
 [[redirects]]
   from = "/*"
