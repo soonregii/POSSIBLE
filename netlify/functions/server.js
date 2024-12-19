@@ -20,11 +20,11 @@ exports.handler = async (event, context) => {
 
     // GET 메소드로 초대 코드 유효성 검사 요청을 처리
     if (method === 'GET' && event.path === '/checkInviteCode') {
-        const { code } = event.queryStringParameters; // URL 쿼리 파라미터에서 코드 받기
-        const response = await inviteCodeService.handler(event); // inviteCode.js에서 유효성 검사
+        const { code } = event.queryStringParameters;
+        const isValid = validInviteCodes.includes(code); // 코드 유효성 검사
         return send({
-            statusCode: response.statusCode,
-            body: response.body
+            statusCode: 200,
+            body: JSON.stringify({ isValid })
         });
     }
 
