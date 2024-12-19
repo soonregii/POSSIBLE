@@ -6,3 +6,7 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+  [dev]
+  functions = "netlify/functions"  # 로컬에서 사용할 서버 함수 경로
+  port = 8888  # 로컬 개발 서버 포트 설정
