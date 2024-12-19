@@ -1,3 +1,8 @@
 [build]
-publish = "./"         # 루트 폴더를 배포 대상으로 설정
-functions = "netlify/functions"
+  functions = "netlify/functions"
+  publish = "public" # 정적 파일 경로
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
