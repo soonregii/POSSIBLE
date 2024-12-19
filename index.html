@@ -128,17 +128,24 @@
         submitInviteCodeBtn.addEventListener('click', () => {
             const inviteCode = inviteCodeInput.value.trim();
             if (inviteCode) {
-                socket.emit('checkInviteCode', inviteCode, (response) => {
-                    if (response.success) {
-                        document.getElementById('inviteCodeForm').style.display = 'none';
-                        cakeContainer.style.display = 'block';
-                        inviteCodeError.style.display = 'none';
-                        inviteCodeSettingForm.style.display = 'none';  // 초대 코드 설정 숨기기
-                    } else {
-                        inviteCodeError.textContent = response.message;
+                fetch(`/checkInviteCode?code=${inviteCode}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.isValid) {
+                            // 초대 코드가 유효한 경우
+                            document.getElementById('inviteCodeForm').style.display = 'none';
+                            cakeContainer.style.display = 'block';
+                            inviteCodeError.style.display = 'none';
+                            inviteCodeSettingForm.style.display = 'none';  // 초대 코드 설정 숨기기
+                        } else {
+                            inviteCodeError.textContent = '유효하지 않은 초대 코드입니다.';
+                            inviteCodeError.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        inviteCodeError.textContent = '서버 오류가 발생했습니다.';
                         inviteCodeError.style.display = 'block';
-                    }
-                });
+                    });
             }
         });
 
