@@ -1,2 +1,3 @@
 [build]
+publish = "./"         # 루트 폴더를 배포 대상으로 설정
 functions = "netlify/functions"
